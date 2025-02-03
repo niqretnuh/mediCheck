@@ -1,7 +1,7 @@
 Below is a sample README template you could use for your iOS medication-checking app. Customize each section as needed, especially around how to set up your APIs and any relevant disclaimers.
 
-Medilocate iOS App
-
+**Medilocate
+**
 Medilocate is an iOS application that helps users identify over-the-counter (OTC) medications, check for drug interactions with their current prescriptions or health conditions, and set reminders for safe medication usage. It uses OCR to capture text from medication packaging, GPT-4 to identify the product and suggest alternatives, and the RxNorm API to check for potential interactions.
 
 Table of Contents
@@ -56,27 +56,7 @@ The app follows a simplified MVVM structure to separate business logic from UI l
 	•	UserProfile and Medication models stored in Core Data (or another local database solution).
 	5.	Networking Layer
 	•	NetworkManager to handle requests, authentication, and parsing for GPT and RxNorm endpoints.
-
-Diagram (simplified example):
-
-+------------------+        +------------------+
-|      Views       |        |    ViewModels    |
-| (SwiftUI, UI)    | <----> |  (business logic)|
-+------------------+        +------------------+
-        ^                        |
-        |                        |
-        v                        v
-+------------------+        +------------------+
-|     Services     |        |   Data Layer     |
-| (OCR, GPT, RxNorm)        | (Core Data/Realm)|
-+------------------+        +------------------+
-        ^                        
-        | (HTTP requests)        
-        v                        
-+------------------+          
-| Networking Layer |          
-|  (API calls)     |          
-+------------------+  
+ 
 
 Prerequisites
 	1.	Xcode (14+ recommended)
