@@ -47,6 +47,32 @@ struct ContentView: View {
             .navigationDestination(for: String.self) { searchQuery in
                 PostSearchView(searchText: searchQuery)
             }
+            // Bottom Navigation Bar
+            VStack {
+                Spacer()
+                // Bottom Navigation Bar
+                HStack {
+                    NavigationLink(destination: ContentView()) {
+                        VStack {
+                            Image(systemName: "house.fill")
+                            Text("Home")
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
+                    
+                    NavigationLink(destination: UserProfileView()) {
+                        VStack {
+                            Image(systemName: "person.fill")
+                            Text("Profile")
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+                .padding()
+                .frame(maxWidth: .infinity)
+                .background(Color.blue.opacity(0.1))
+            }
+            .navigationTitle("Medilocate")
         }
     }
 }
