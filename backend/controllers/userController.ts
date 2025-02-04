@@ -1,19 +1,6 @@
 import { Request, Response } from "express";
 import User from "../models/userModel";
 
-// @desc    Get all users or filter by query
-// @route   GET /api/users
-// @access  Public
-export const getUsers = async (req: Request, res: Response): Promise<void> => {
-	try {
-		const filters = req.query;
-		const users = await User.find(filters);
-		res.status(200).json(users);
-	} catch (error) {
-		res.status(500).json({ message: "Failed to get users", error });
-	}
-};
-
 // @desc    Get or create a user
 // @route   POST /api/users
 // @access  Public
