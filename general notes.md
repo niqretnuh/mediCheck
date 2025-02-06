@@ -22,6 +22,12 @@ https://open.fda.gov/apis/authentication/,
 	  - any warnings
 - get chat to format into a .json, we display this all to user intuitively, if any interactions found w existing medications, alert user
 - have button where it says "take now" and add calendar events to user phone/icloud? based on calculated intervals of dosage, save medicine/or add to taking list (use userController to update)
-
+| **Feature**                     | **Recommended Transformer Model / API**       |
+|---------------------------------|----------------------------------------------|
+| **OCR (Image-to-Text)**         | TrOCR, Donut, Google Vision OCR             |
+| **NER (Medication & Ingredients)** | BioBERT, Med7 (SciSpacy), RxBERT            |
+| **Drug Info (FDA API Processing)** | FDA OpenAPI + GPT-4 Turbo                   |
+| **JSON Structuring**            | GPT-4 Function Calling, T5                  |
+| **Calendar Scheduling**         | Google Calendar API, iCloud API             |
 
 
