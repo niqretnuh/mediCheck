@@ -15,19 +15,33 @@ class TextRecognition {
 
         let requestHandler = VNImageRequestHandler(cgImage: cgImage, options: [:])
         let request = VNRecognizeTextRequest { request, error in
-            guard let observations = request.results as? [VNRecognizedTextObservation] else {
-                completion("No text detected")
+            if let error = error {
+                print("Error during text recognition: \(error)")
+                DispatchQueue.main.async {
+                    completion("Error recognizing text")
+                }
                 return
             }
-
-            let recognizedStrings = observations.compactMap { $0.topCandidates(1).first?.string }
+            
+            guard let observations = request.results as? [VNRecognizedTextObservation] else {
+                DispatchQueue.main.async {
+                    completion("No text detected")
+                }
+                return
+            }
+            
+            let recognizedStrings = observations.flatMap { observation in
+                observation.topCandidates(5).map { $0.string }
+            }
+            
             let resultText = recognizedStrings.joined(separator: ", ")
-
+            print("OCR Result: \(resultText)")  // Debug print
+            
             DispatchQueue.main.async {
-                completion(resultText)
+                // Fallback to "No text detected" if resultText is empty
+                completion(resultText.isEmpty ? "No text detected" : resultText)
             }
         }
-
         do {
             try requestHandler.perform([request])
         } catch {
