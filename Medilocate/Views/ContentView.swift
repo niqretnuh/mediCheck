@@ -80,10 +80,26 @@ struct ContentView: View {
                     .sheet(isPresented: $isCameraPresented) {
                         CameraPicker(selectedImage: $selectedImage, onImagePicked: recognizeText)
                     }
+
+                    // Box to show identified keywords
+                    GroupBox(label: Label("Identified Keywords", systemImage: "text.badge.checkmark")) {
+                        ScrollView {
+                            Text(detectedText)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding()
+                        }
+                        .frame(height: 150)
+                    }
+                    .padding(.horizontal)
+                    
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .padding()
-                .background(RoundedRectangle(cornerRadius: 20).fill(Color.white).shadow(radius: 5))
+                .background(
+                    RoundedRectangle(cornerRadius: 20)
+                        .fill(Color.white)
+                        .shadow(radius: 5)
+                )
                 .padding(40)
             }
             .navigationTitle("Medilocate")
@@ -99,6 +115,7 @@ struct ContentView: View {
     func recognizeText(in image: UIImage) {
         TextRecognition.shared.recognizeText(in: image) { recognizedText in
             detectedText = recognizedText
+            UserDefaults.standard.set(detectedText, forKey: "ocrResponse")
         }
     }
 }
