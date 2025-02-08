@@ -53,5 +53,7 @@ Medilocate helps users track their medications, identify potential drug interact
 
 1. **Clone the repository:**  
    ```sh
-   git clone https://github.com/your-repo/medication-safety-app.git
-   cd medication-safety-app
+   git clone https://github.com/jbaek1/medilocatev2.git
+   cd medilocatev2
+
+
