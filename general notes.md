@@ -12,8 +12,8 @@ https://open.fda.gov/apis/authentication/,
 **
 - user enrols w DOB, contraindicatoins, medications currently being taken, (keep usermodel.ts)
 - user takes a picture of medication box / pill that they're about to take
-- **get chat to perform NER / image-to-text
-	- extract .json of ingredients, brand name on box, generic name
+- *use apple vision kitfor image-to-text
+- get gemini model using API to get extracted text to format the text into a json of json of ingredients, brand name on box, generic name
 - pass metadata of user prompted medication through FDA API**
 	- side effects
 	 -  interactions
