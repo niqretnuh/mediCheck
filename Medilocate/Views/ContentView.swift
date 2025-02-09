@@ -6,7 +6,10 @@ struct ContentView: View {
     @State private var selectedItem: PhotosPickerItem? = nil
     @State private var selectedImage: UIImage?
     @State private var detectedText: String = "No text detected"
+    @State private var medicationNames: [String] = ["No medications identified"]
     @State private var isCameraPresented = false
+
+    private let geminiAPI = GeminiAPI()  // Initialize Gemini API
 
     var body: some View {
         NavigationStack {
@@ -58,7 +61,7 @@ struct ContentView: View {
                             if let data = try? await newItem?.loadTransferable(type: Data.self),
                                let uiImage = UIImage(data: data) {
                                 selectedImage = uiImage
-                                recognizeText(in: uiImage) // Perform OCR
+                                recognizeText(in: uiImage) // Perform OCR and then fetch medication names
                             }
                         }
                     }
@@ -81,14 +84,16 @@ struct ContentView: View {
                         CameraPicker(selectedImage: $selectedImage, onImagePicked: recognizeText)
                     }
 
-                    // Box to show identified keywords
-                    GroupBox(label: Label("Identified Keywords", systemImage: "text.badge.checkmark")) {
-                        ScrollView {
-                            Text(detectedText)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding()
+                    // Box to show AI-processed medication names
+                    GroupBox(label: Label("Identified Medications", systemImage: "pills")) {
+                        VStack(alignment: .leading, spacing: 10) {
+                            ForEach(medicationNames, id: \.self) { name in
+                                Text("• \(name)")
+                                    .font(.headline)
+                            }
                         }
-                        .frame(height: 150)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding()
                     }
                     .padding(.horizontal)
                     
@@ -116,8 +121,21 @@ struct ContentView: View {
         TextRecognition.shared.recognizeText(in: image) { recognizedText in
             detectedText = recognizedText
             UserDefaults.standard.set(detectedText, forKey: "ocrResponse")
+            
+            LlamaAPI.query(text: recognizedText) { result in
+                DispatchQueue.main.async {
+                    switch result {
+                    case .success(let responseText):
+                        medicationNames = responseText.components(separatedBy: ", ").map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                    case .failure(let error):
+                        print("Error querying LlamaAPI:", error.localizedDescription)
+                        medicationNames = ["Error identifying medications"]
+                    }
+                }
+            }
         }
     }
+
 }
 
 #Preview {
