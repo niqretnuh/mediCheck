@@ -7,6 +7,11 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		32475CD42D587C5F0032B94A /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = 32475CD32D587C5F0032B94A /* FirebaseAnalytics */; };
+		32475CD62D587C5F0032B94A /* FirebaseAnalyticsOnDeviceConversion in Frameworks */ = {isa = PBXBuildFile; productRef = 32475CD52D587C5F0032B94A /* FirebaseAnalyticsOnDeviceConversion */; };
+		32475CD82D587C5F0032B94A /* FirebaseAnalyticsWithoutAdIdSupport in Frameworks */ = {isa = PBXBuildFile; productRef = 32475CD72D587C5F0032B94A /* FirebaseAnalyticsWithoutAdIdSupport */; };
+		32475CDA2D587C5F0032B94A /* FirebaseAppCheck in Frameworks */ = {isa = PBXBuildFile; productRef = 32475CD92D587C5F0032B94A /* FirebaseAppCheck */; };
+		32475CDC2D587C5F0032B94A /* FirebaseAppDistribution-Beta in Frameworks */ = {isa = PBXBuildFile; productRef = 32475CDB2D587C5F0032B94A /* FirebaseAppDistribution-Beta */; };
 		66AD0E132D5804AB0067B465 /* GoogleGenerativeAI in Frameworks */ = {isa = PBXBuildFile; productRef = 66AD0E122D5804AB0067B465 /* GoogleGenerativeAI */; };
 		66AD0E1A2D5817AD0067B465 /* SwiftOpenAI in Frameworks */ = {isa = PBXBuildFile; productRef = 66AD0E192D5817AD0067B465 /* SwiftOpenAI */; };
 /* End PBXBuildFile section */
@@ -70,8 +75,13 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				32475CDC2D587C5F0032B94A /* FirebaseAppDistribution-Beta in Frameworks */,
 				66AD0E1A2D5817AD0067B465 /* SwiftOpenAI in Frameworks */,
+				32475CD82D587C5F0032B94A /* FirebaseAnalyticsWithoutAdIdSupport in Frameworks */,
 				66AD0E132D5804AB0067B465 /* GoogleGenerativeAI in Frameworks */,
+				32475CD42D587C5F0032B94A /* FirebaseAnalytics in Frameworks */,
+				32475CDA2D587C5F0032B94A /* FirebaseAppCheck in Frameworks */,
+				32475CD62D587C5F0032B94A /* FirebaseAnalyticsOnDeviceConversion in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -134,6 +144,11 @@
 			packageProductDependencies = (
 				66AD0E122D5804AB0067B465 /* GoogleGenerativeAI */,
 				66AD0E192D5817AD0067B465 /* SwiftOpenAI */,
+				32475CD32D587C5F0032B94A /* FirebaseAnalytics */,
+				32475CD52D587C5F0032B94A /* FirebaseAnalyticsOnDeviceConversion */,
+				32475CD72D587C5F0032B94A /* FirebaseAnalyticsWithoutAdIdSupport */,
+				32475CD92D587C5F0032B94A /* FirebaseAppCheck */,
+				32475CDB2D587C5F0032B94A /* FirebaseAppDistribution-Beta */,
 			);
 			productName = Medilocate;
 			productReference = 66114C662D517ABA004F3E6E /* Medilocate.app */;
@@ -220,6 +235,7 @@
 			packageReferences = (
 				66AD0E112D5804AB0067B465 /* XCRemoteSwiftPackageReference "generative-ai-swift" */,
 				66AD0E182D58160A0067B465 /* XCRemoteSwiftPackageReference "SwiftOpenAI" */,
+				32475CD22D587C5F0032B94A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 66114C672D517ABA004F3E6E /* Products */;
@@ -625,6 +641,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		32475CD22D587C5F0032B94A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 11.8.1;
+			};
+		};
 		66AD0E112D5804AB0067B465 /* XCRemoteSwiftPackageReference "generative-ai-swift" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/google-gemini/generative-ai-swift";
@@ -644,6 +668,31 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		32475CD32D587C5F0032B94A /* FirebaseAnalytics */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 32475CD22D587C5F0032B94A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAnalytics;
+		};
+		32475CD52D587C5F0032B94A /* FirebaseAnalyticsOnDeviceConversion */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 32475CD22D587C5F0032B94A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAnalyticsOnDeviceConversion;
+		};
+		32475CD72D587C5F0032B94A /* FirebaseAnalyticsWithoutAdIdSupport */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 32475CD22D587C5F0032B94A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAnalyticsWithoutAdIdSupport;
+		};
+		32475CD92D587C5F0032B94A /* FirebaseAppCheck */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 32475CD22D587C5F0032B94A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAppCheck;
+		};
+		32475CDB2D587C5F0032B94A /* FirebaseAppDistribution-Beta */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 32475CD22D587C5F0032B94A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = "FirebaseAppDistribution-Beta";
+		};
 		66AD0E122D5804AB0067B465 /* GoogleGenerativeAI */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 66AD0E112D5804AB0067B465 /* XCRemoteSwiftPackageReference "generative-ai-swift" */;

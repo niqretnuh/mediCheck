@@ -1,14 +1,30 @@
 import SwiftUI
 import PhotosUI
+import FirebaseCore
+
+
+
+class AppDelegate: NSObject, UIApplicationDelegate {
+  func application(_ application: UIApplication,
+                   didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
+    FirebaseApp.configure()
+
+    return true
+  }
+}
+
+
+/* ... */
 
 struct ContentView: View {
+    
     @State private var searchText: String = ""
     @State private var selectedItem: PhotosPickerItem? = nil
     @State private var selectedImage: UIImage?
     @State private var detectedText: String = "No text detected"
     @State private var medicationNames: [String] = ["No medications identified"]
     @State private var isCameraPresented = false
-
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
     private let geminiAPI = GeminiAPI()  // Initialize Gemini API
 
     var body: some View {
