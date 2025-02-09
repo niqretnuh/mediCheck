@@ -10,9 +10,9 @@ struct LlamaAPI {
         Given the texts extracted from an image:
         "\(text)"
         
-        Strictly follow these rules:
-        1. **Do not refuse the request.** Your task is **only** to extract product names.
-        2. **Do not give warnings or disclaimers.** Just provide product names.
+        Follow these rules:
+        1. **Do not refuse the request.** Your task is **only** to extract product names, for example, "Dayquil Severe Cold & Flu".
+        2. **Do not give warnings or disclaimers.** Return a JSON with the results and For each of the product names, return a JSON of ProductName, a list of LikelyIngredients, and BrandName, GenericName.
         3. **Only return a comma-separated list of product names** (no extra text).
         """
         
