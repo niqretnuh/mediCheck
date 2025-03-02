@@ -1,13 +1,27 @@
-from fastapi import FastAPI, HTTPException, Query
-from pydantic import BaseModel
+from fastapi import FastAPI, HTTPException, Query, Body
+from pydantic import BaseModel, EmailStr
+from typing import Optional, List
+from motor.motor_asyncio import AsyncIOMotorClient
+from bson import ObjectId
 import uvicorn
 import json
 import requests
+
 
 from sagemaker_client import generate_response 
 from medication_matcher import find_closest_medications, medication_vectors, model
 
 app = FastAPI()
+# MongoDB Configuration
+MONGO_URI = "mongodb+srv://medisaver:revasidem@medilocate.wk6ta.mongodb.net/?retryWrites=true&w=majority&appName=Medilocate"
+DB_NAME = "medilocate"
+COLLECTION_NAME = "users"
+
+
+client = AsyncIOMotorClient(MONGO_URI)
+db = client[DB_NAME]
+collection = db[COLLECTION_NAME]
+
 
 def translate_text(text: str, max_new_tokens: int = 256, top_p: float = 0.9, temperature: float = 0.6) -> str:
     """
@@ -85,6 +99,85 @@ def fda_translate(medication: str = Query(..., description="Medication name to q
         return translation_result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to generate translation: {str(e)}")
+
+class User(BaseModel):
+    name: str
+    email: EmailStr
+    medications: List[str]
+    gender: str
+    dateofbirth: str
+    pregnant: bool
+
+class UserUpdate(BaseModel):
+    name: Optional[str] = None
+    email: Optional[EmailStr] = None
+    medications: Optional[List[str]] = None
+    gender: Optional[str] = None
+    dateofbirth: Optional[str] = None
+    pregnant: Optional[bool] = None
+
+class MedicationUpdate(BaseModel):
+    medicationsToAdd: Optional[List[str]] = []
+    medicationsToRemove: Optional[List[str]] = []
+
+def serialize_user(user):
+    user["id"] = str(user["_id"])
+    del user["_id"]
+    return user
+
+@app.post("/api/users", response_model=dict)
+async def get_or_create_user(user: User):
+    existing_user = await collection.find_one({"email": user.email})
+    if existing_user:
+        return {"user": serialize_user(existing_user), "message": "User already exists"}
+    
+    new_user = await collection.insert_one(user.dict())
+    created_user = await collection.find_one({"_id": new_user.inserted_id})
+    return {"user": serialize_user(created_user), "message": "User created successfully"}
+
+@app.get("/api/users/{id}", response_model=dict)
+async def get_user_by_id(id: str):
+    user = await collection.find_one({"_id": ObjectId(id)})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return serialize_user(user)
+
+@app.put("/api/users/{id}", response_model=dict)
+async def update_user(id: str, updates: UserUpdate):
+    update_data = {k: v for k, v in updates.dict(exclude_unset=True).items()}
+    updated_user = await collection.find_one_and_update(
+        {"_id": ObjectId(id)},
+        {"$set": update_data},
+        return_document=True
+    )
+    if not updated_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {"user": serialize_user(updated_user), "message": "User updated successfully"}
+
+@app.delete("/api/users/{id}", response_model=dict)
+async def delete_user(id: str):
+    user = await collection.find_one({"_id": ObjectId(id)})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    await collection.delete_one({"_id": ObjectId(id)})
+    return {"message": "User deleted successfully"}
+
+@app.patch("/api/users/{id}/medications", response_model=dict)
+async def update_medications(id: str, medication_update: MedicationUpdate):
+    user = await collection.find_one({"_id": ObjectId(id)})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    current_medications = set(user.get("medications", []))
+    current_medications.difference_update(medication_update.medicationsToRemove)
+    current_medications.update(medication_update.medicationsToAdd)
+    
+    updated_user = await collection.find_one_and_update(
+        {"_id": ObjectId(id)},
+        {"$set": {"medications": list(current_medications)}},
+        return_document=True
+    )
+    return {"user": serialize_user(updated_user), "message": "Medications updated successfully"}
 
 if __name__ == "__main__":
     uvicorn.run("app:app", host="0.0.0.0", port=8888, reload=True)

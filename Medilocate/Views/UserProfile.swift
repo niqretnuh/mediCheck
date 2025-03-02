@@ -1,12 +1,12 @@
 import SwiftUI
 
 struct UserProfileView: View {
-    @State private var username: String = "John Doe"
-    @State private var email: String = "johndoe@example.com"
+    @State private var username: String = "Loading..."
+    @State private var email: String = "Loading..."
     
     var body: some View {
-        ZStack{Color.white
-                .ignoresSafeArea()
+        ZStack {
+            Color.white.ignoresSafeArea()
             
             VStack {
                 // Profile Image
@@ -49,6 +49,15 @@ struct UserProfileView: View {
                             Text("Help & Support")
                         }
                     }
+                    
+                    Button(action: logout) {
+                        HStack {
+                            Image(systemName: "arrow.right.square.fill")
+                                .foregroundColor(.red)
+                            Text("Logout")
+                                .foregroundColor(.red)
+                        }
+                    }
                 }
                 .frame(maxHeight: 300)
                 
@@ -57,7 +66,6 @@ struct UserProfileView: View {
                 // Bottom Navigation Bar
                 VStack {
                     Spacer()
-                    // Bottom Navigation Bar
                     HStack {
                         NavigationLink(destination: ContentView()) {
                             VStack {
@@ -82,6 +90,29 @@ struct UserProfileView: View {
                 .navigationTitle("Profile")
             }
         }
+        .onAppear {
+            loadUserData() // Fetch user info when the view appears
+        }
+    }
+    
+    // Loads user data from Keychain or UserDefaults
+    private func loadUserData() {
+        if let userID = KeychainHelper.getUserIdentifier() {
+            username = "User ID: \(userID)" // Replace with actual user details
+        }
+        
+        // Retrieve stored email if available
+        if let storedEmail = UserDefaults.standard.string(forKey: "userEmail") {
+            email = storedEmail
+        }
+    }
+    
+    // Logs out the user and resets stored data
+    private func logout() {
+        KeychainHelper.deleteUserIdentifier() // Remove stored login info
+        UserDefaults.standard.removeObject(forKey: "userEmail") // Remove email
+        username = "Guest"
+        email = "Not logged in"
     }
 }
 

@@ -9,9 +9,15 @@ import SwiftUI
 
 @main
 struct MedilocateApp: App {
+    @State private var isAuthenticated: Bool = KeychainHelper.getUserIdentifier() != nil
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            if isAuthenticated {
+                ContentView()
+            }
+            else {
+                LoginView()
+            }
         }
     }
 }
