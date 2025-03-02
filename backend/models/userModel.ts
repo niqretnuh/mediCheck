@@ -4,7 +4,7 @@ export interface IUser extends Document {
 	firebaseId: string;
 	name: string;
 	email: string;
-    medications: string;
+    medications: string[];
     gender: string;
     dateofbirth: Date
     pregnant: boolean;

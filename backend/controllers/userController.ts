@@ -99,3 +99,36 @@ export const deleteUser = async (req: Request, res: Response): Promise<void> => 
 		res.status(500).json({ message: "Internal server error.", error });
 	}
 };
+// @desc    Update user medications (append and remove medications)
+// @route   PATCH /api/users/:id/medications
+// @access  Public
+export const updateMedications = async (req: Request, res: Response): Promise<void> => {
+	try {
+		const { id } = req.params;
+		const { medicationsToAdd, medicationsToRemove } = req.body;
+
+		// Find the user by id
+		const user = await User.findById(id);
+		if (!user) {
+			res.status(404).json({ message: "User not found." });
+			return;
+		}
+		// Remove specified medications from the user's medications list
+		if (Array.isArray(medicationsToRemove)) {
+			user.medications = user.medications.filter((med: string) => !medicationsToRemove.includes(med));
+		}
+		// Append new medications, ensuring no duplicates
+		if (Array.isArray(medicationsToAdd)) {
+			medicationsToAdd.forEach((newMed: string) => {
+				if (!user.medications.includes(newMed)) {
+					user.medications.push(newMed);
+				}
+			});
+		}
+		// Save the updated user document
+		const updatedUser = await user.save();
+		res.status(200).json({ user: updatedUser, message: "Medications updated successfully." });
+	} catch (error) {
+		res.status(400).json({ message: "Failed to update medications", error });
+	}
+};
