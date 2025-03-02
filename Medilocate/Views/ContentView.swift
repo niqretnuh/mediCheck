@@ -1,13 +1,6 @@
 import SwiftUI
 import PhotosUI
 
-class AppDelegate: NSObject, UIApplicationDelegate {
-    func application(_ application: UIApplication,
-                     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
-        return true
-    }
-}
-
 struct ContentView: View {
     /// TODO: This is stupid. Jimmy please get backend done
     @State private var searchText: String = ""
@@ -97,7 +90,7 @@ struct ContentView: View {
                 )
                 .padding(40)
                 
-                // State variables trigger Navigation to post
+                // State variables trigger Navigation to postsearch
                 NavigationLink(
                     destination: PostSearchView(searchResults: searchResults ?? []),
                     isActive: $navigateToPostSearch,
@@ -115,10 +108,21 @@ struct ContentView: View {
     
     // Uses OCR to recognize text from an image, then finds the closest medication names.
     func recognizeText(in image: UIImage) {
+        // Immediately dismiss the camera view on the main thread.
+        DispatchQueue.main.async {
+            isCameraPresented = false
+        }
+
         TextRecognition.shared.recognizeText(in: image) { recognizedText in
-            detectedText = recognizedText
+            // split recognized text, and choose top 3
+            let candidates = recognizedText.components(separatedBy: ",").filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+            let topCandidates = candidates.prefix(3)
+            let query = topCandidates.joined(separator: " ")
+            
+            detectedText = query
             UserDefaults.standard.set(detectedText, forKey: "ocrResponse")
             
+            // call knn matching function
             let results = finder.findClosestMedications(for: detectedText, k: 3)
             DispatchQueue.main.async {
                 searchResults = results
@@ -126,6 +130,8 @@ struct ContentView: View {
             }
         }
     }
+
+
     
     // Performs a search using the text in the search bar.
     func performSearch() {
