@@ -1,11 +1,9 @@
 import SwiftUI
 import PhotosUI
-import FirebaseCore
 
 class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication,
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
-        FirebaseApp.configure()
         return true
     }
 }
@@ -20,9 +18,6 @@ struct ContentView: View {
     // State control vars
     @State private var searchResults: [String]? = nil
     @State private var navigateToPostSearch = false
-    
-    @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
-    
     /// TODO: This is also stupid and needs to go
     private let finder = MedicationMatcher(csvFileName: "unique_prod_names")
     
