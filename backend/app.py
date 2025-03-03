@@ -23,17 +23,18 @@ client = AsyncIOMotorClient(MONGO_URI, tls=True, tlsAllowInvalidCertificates=Tru
 db = client[DB_NAME]
 collection = db[COLLECTION_NAME]
 
-def translate_text(text: str, max_new_tokens: int = 256, top_p: float = 0.9, temperature: float = 0.6) -> str:
+def translate_text(text: str, max_new_tokens: int = 500, top_p: float = 0.9, temperature: float = 0.6) -> str:
     """
     Constructs the translation prompt and calls the SageMaker endpoint.
     """
     system_prompt = (
-        "Translate the following medication facts into clear, concise, and easy-to-understand bullet points that are personable, instructive, and professional. "
-        "Each bullet point should summarize one key fact—whether it is a description, active ingredient, adverse reaction, instruction, or drug interactions for use—in a friendly and engaging tone. "
-        "For every line, if no information is provided, put 'Seek medical professionals for advice'. "
-        "Output each bullet point on a separate line so that the response can be returned as an array of strings."
+        "Provide me with the following in bullet point form using the information from the FDA that is clear, concise, and easy-to understand." 
+        "This current user is 60 year old female that is pregnant." 
+        "I want: Drug Name, Ingredients, Purpose and Usage, Dosage and Administration (based on the Age of the patient, do not give irrelevant information that does not fit patient's age)."
+        "Adverse Ingredients (use ask_doctor_or_pharmacist for this), Warnings and Adverse Reaction (use the warnings section)"
+        "SHOW ONLY IF THE USER IS PREGNANT or breastfeeding (use the warnings section)"
     )
-    
+
     prompt = (
         "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n"
         f"{system_prompt} <|eot_id|><|start_header_id|>user<|end_header_id|>\n\n"
@@ -82,11 +83,17 @@ def fda_translate(medication: str = Query(..., description="Medication name to q
         return value
 
     combined_text = (
-        f"Description: {extract_field('description')}\n"
+        f"Purpose: {extract_field('purpose')}\n"
+        f"Indication and Usage: {extract_field('indication_and_usage')}\n"
         f"Active Ingredient: {extract_field('active_ingredient')}\n"
-        f"Adverse Reaction: {extract_field('adverse_reaction')}\n"
+        f"Do not use: {extract_field('do_not_use')}\n"
+        f"Warnings: {extract_field('warnings')}\n"
         f"Instruction For Use: {extract_field('instruction_for_use')}\n"
         f"Drug Interactions: {extract_field('drug_interactions')}"
+        f"Dosage: {extract_field('dosage_and_administration')}"
+        f"Pregnancy or Breastfeeding: {extract_field('pregnancy_or_breast_feeding')}"
+        f"Ask Doctor: {extract_field('ask_doctor')}"
+        f"Ask Doctor or Pharmacist: {extract_field('ask_doctor_or_pharmacist')}"
     )
     
     try:

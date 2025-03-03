@@ -30,15 +30,23 @@ class TextRecognition {
                 return
             }
             
-            let recognizedStrings = observations.flatMap { observation in
-                observation.topCandidates(5).map { $0.string }
+            // Sort observations by bounding box area (largest first)
+            let sortedObservations = observations.sorted { obs1, obs2 in
+                let area1 = obs1.boundingBox.width * obs1.boundingBox.height
+                let area2 = obs2.boundingBox.width * obs2.boundingBox.height
+                return area1 > area2
             }
             
-            let resultText = recognizedStrings.joined(separator: ", ")
+            // Extract the top candidate string from each sorted observation
+            let recognizedStrings = sortedObservations.compactMap { observation in
+                observation.topCandidates(1).first?.string
+            }
+            
+            // Join the recognized strings with newline for clarity
+            let resultText = recognizedStrings.joined(separator: "\n")
             print("OCR Result: \(resultText)")  // Debug print
             
             DispatchQueue.main.async {
-                // Fallback to "No text detected" if resultText is empty
                 completion(resultText.isEmpty ? "No text detected" : resultText)
             }
         }
