@@ -18,4 +18,4 @@ def generate_response(prompt: str, max_new_tokens: int = 256, top_p: float = 0.9
     )
     # The response Body is a stream; read and decode it.
     result = response['Body'].read().decode('utf-8')
-    return result
+    return json.loads(result)

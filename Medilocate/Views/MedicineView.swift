@@ -54,17 +54,14 @@ struct MedicineView: View {
                 return
             }
             do {
-                print("LALALA")
                 if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
                     var resultText: String = ""
-                    print("Here is fine")
                     if let generatedText = json["generated_text"] as? String {
                         resultText = generatedText
                         print(resultText)
                     } else {
                         resultText = String(data: data, encoding: .utf8) ?? ""
                     }
-                    print("This fine")
                     // Split the generated text into bullet points
                     let bullets = resultText
                         .components(separatedBy: "\n")
