@@ -5,17 +5,22 @@ struct OnboardingView: View {
     @State private var email: String = ""
     @State private var age: String = ""
     @State private var gender: String = "Select Gender"
-    @State private var medications: String = ""
+    @State private var selectedMedications: [String] = []
     @State private var isPregnant: Bool = false
     @State private var isAuthenticated: Bool = false
     @State private var showError: Bool = false
     @State private var errorMessage: String = ""
 
+    // Medication Search
+    @State private var showMedicationSearch: Bool = false
+    @State private var searchText: String = ""
+    @State private var searchResults: [String] = []
+
     let genders = ["Select Gender", "Male", "Female", "Non-binary", "Other"]
 
     var body: some View {
         if isAuthenticated {
-            ContentView() // ✅ Switches to main screen after successful onboarding
+            ContentView() // Switches to main screen after successful onboarding
         } else {
             VStack(spacing: 20) {
                 Text("Welcome to Medicheck! Enter your details to create a profile.")
@@ -23,43 +28,64 @@ struct OnboardingView: View {
                     .multilineTextAlignment(.center)
                     .padding()
 
-                // Name
                 TextField("Full Name", text: $name)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                     .padding()
 
-                // Email
                 TextField("Email", text: $email)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                     .keyboardType(.emailAddress)
                     .autocapitalization(.none)
                     .padding()
 
-                // Age
                 TextField("Age", text: $age)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                     .keyboardType(.numberPad)
                     .padding()
 
-                // Gender Picker
                 Picker("Gender", selection: $gender) {
-                    ForEach(genders, id: \.self) { Text($0) }
+                    ForEach(genders, id: \.self) { genderOption in
+                        Text(genderOption)
+                    }
                 }
                 .pickerStyle(MenuPickerStyle())
                 .padding()
 
-                // Medications
-                TextField("Current Medications (comma-separated)", text: $medications)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                    .padding()
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Medications").font(.headline)
 
-                // Pregnancy Status (Only for Female)
+                    if selectedMedications.isEmpty {
+                        Text("No medications selected").foregroundColor(.gray)
+                    } else {
+                        ForEach(selectedMedications, id: \.self) { med in
+                            HStack {
+                                Text(med)
+                                Spacer()
+                                Button(action: {
+                                    if let index = selectedMedications.firstIndex(of: med) {
+                                        selectedMedications.remove(at: index)
+                                    }
+                                }) {
+                                    Image(systemName: "minus.circle.fill")
+                                        .foregroundColor(.red)
+                                }
+                            }
+                        }
+                    }
+
+                    Button(action: { showMedicationSearch = true }) {
+                        HStack {
+                            Image(systemName: "magnifyingglass")
+                            Text("Add Medication")
+                        }
+                    }
+                }
+                .padding()
+
                 if gender == "Female" {
-                    Toggle("Are you pregnant?", isOn: $isPregnant)
-                        .padding()
+                    Toggle("Are you pregnant?", isOn: $isPregnant).padding()
                 }
 
-                // Submit Button
                 Button(action: submitUserData) {
                     Text("Create Profile")
                         .bold()
@@ -72,21 +98,23 @@ struct OnboardingView: View {
                 .padding()
                 .disabled(name.isEmpty || email.isEmpty || age.isEmpty || gender == "Select Gender")
 
-                // Error Message
                 if showError {
-                    Text(errorMessage)
-                        .foregroundColor(.red)
-                        .multilineTextAlignment(.center)
-                        .padding()
+                    Text(errorMessage).foregroundColor(.red).multilineTextAlignment(.center).padding()
                 }
             }
             .padding()
+            .sheet(isPresented: $showMedicationSearch) {
+                MedicationSearchView(searchText: $searchText, searchResults: $searchResults) { medication in
+                    if !medication.isEmpty && !selectedMedications.contains(medication) {
+                        selectedMedications.append(medication)
+                    }
+                }
+            }
         }
     }
 
-    /// **Submits User Data to MongoDB Backend**
     private func submitUserData() {
-        guard let url = URL(string: "http://localhost:8888/api/users") else {
+        guard let url = URL(string: "https://62b5-129-59-122-28.ngrok-free.app/api/users") else {
             self.errorMessage = "Invalid API URL"
             self.showError = true
             return
@@ -95,11 +123,12 @@ struct OnboardingView: View {
         let userPayload: [String: Any] = [
             "name": name,
             "email": email,
-            "medications": medications.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) },
+            "medications": selectedMedications,
             "gender": gender,
             "dateofbirth": calculateDOB(from: age),
             "pregnant": gender == "Female" ? isPregnant : false
         ]
+
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -112,7 +141,6 @@ struct OnboardingView: View {
             return
         }
 
-        // **Send Data to API**
         URLSession.shared.dataTask(with: request) { data, response, error in
             if let error = error {
                 DispatchQueue.main.async {
@@ -122,7 +150,8 @@ struct OnboardingView: View {
                 return
             }
 
-            guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 201,
+            guard let httpResponse = response as? HTTPURLResponse,
+                  (200...299).contains(httpResponse.statusCode),
                   let data = data else {
                 DispatchQueue.main.async {
                     self.errorMessage = "Failed to create user. Please try again."
@@ -131,20 +160,13 @@ struct OnboardingView: View {
                 return
             }
 
-            // **User Successfully Created**
             DispatchQueue.main.async {
                 do {
                     if let responseJSON = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any],
                        let user = responseJSON["user"] as? [String: Any],
-                       let userID = user["_id"] as? String {
-                        
-                        // ✅ Store User ID in Keychain
+                       let userID = user["id"] as? String {
                         KeychainHelper.save(userIdentifier: userID)
-                        
-                        // ✅ Save Email for Future Login
                         UserDefaults.standard.set(email, forKey: "userEmail")
-                        
-                        // ✅ Navigate to `ContentView`
                         isAuthenticated = true
                     }
                 } catch {
@@ -155,15 +177,68 @@ struct OnboardingView: View {
         }.resume()
     }
 
-    /// **Calculates Date of Birth from Age**
     private func calculateDOB(from age: String) -> String {
         if let ageInt = Int(age) {
             let currentYear = Calendar.current.component(.year, from: Date())
             let birthYear = currentYear - ageInt
-            return "\(birthYear)-01-01" // Approximate DOB
+            return "\(birthYear)-01-01"
         }
         return "Unknown"
     }
+}
+
+struct MedicationSearchView: View {
+    @Binding var searchText: String
+    @Binding var searchResults: [String]
+    var onSelectMedication: (String) -> Void
+    @Environment(\.presentationMode) var presentationMode
+
+    var body: some View {
+        NavigationView {
+            VStack {
+                TextField("Search Medication", text: $searchText, onCommit: performSearch)
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                    .padding()
+
+                Button("Search", action: performSearch).padding(.bottom)
+
+                List(searchResults, id: \.self) { medication in
+                    Button(action: {
+                        onSelectMedication(medication)
+                        presentationMode.wrappedValue.dismiss()
+                    }) {
+                        Text(medication)
+                    }
+                }
+            }
+            .navigationTitle("Search Medications")
+            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarItems(trailing: Button("Done") {
+                presentationMode.wrappedValue.dismiss()
+            })
+        }
+    }
+
+    private func performSearch() {
+        guard let url = URL(string: "https://62b5-129-59-122-28.ngrok-free.app/api/medications?query=\(searchText)&k=3") else { return }
+
+        URLSession.shared.dataTask(with: url) { data, _, error in
+            if let data = data {
+                do {
+                    let response = try JSONDecoder().decode(MedicationResponse.self, from: data)
+                    DispatchQueue.main.async {
+                        searchResults = response.results
+                    }
+                } catch {
+                    print("Error decoding medication results: \(error)")
+                }
+            }
+        }.resume()
+    }
+}
+
+struct MedicationResponse: Codable {
+    let results: [String]
 }
 
 #Preview {

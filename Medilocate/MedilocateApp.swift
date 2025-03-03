@@ -16,7 +16,7 @@ struct MedilocateApp: App {
                 ContentView()
             }
             else {
-                LoginView()
+                OnboardingView()
             }
         }
     }

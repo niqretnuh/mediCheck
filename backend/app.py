@@ -16,9 +16,7 @@ app = FastAPI()
 MONGO_URI = "mongodb+srv://medisaver:revasidem@medilocate.wk6ta.mongodb.net/?retryWrites=true&w=majority&appName=Medilocate"
 DB_NAME = "medilocate"
 COLLECTION_NAME = "users"
-
-
-client = AsyncIOMotorClient(MONGO_URI)
+client = AsyncIOMotorClient(MONGO_URI, tls = True, tlsAllowInvalidCertificates = True)
 db = client[DB_NAME]
 collection = db[COLLECTION_NAME]
 
@@ -178,6 +176,4 @@ async def update_medications(id: str, medication_update: MedicationUpdate):
         return_document=True
     )
     return {"user": serialize_user(updated_user), "message": "Medications updated successfully"}
-
-if __name__ == "__main__":
-    uvicorn.run("app:app", host="0.0.0.0", port=8888, reload=True)
+uvicorn.run("app:app", host="0.0.0.0", port=8888, reload=True)
