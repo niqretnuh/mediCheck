@@ -114,7 +114,7 @@ struct OnboardingView: View {
     }
 
     private func submitUserData() {
-        guard let url = URL(string: "https://c560-129-59-122-28.ngrok-free.app/api/users") else {
+        guard let url = URL(string: "\(ContentView.Key.backend_path)users") else {
             self.errorMessage = "Invalid API URL"
             self.showError = true
             return
@@ -220,20 +220,12 @@ struct MedicationSearchView: View {
     }
 
     private func performSearch() {
-        guard let url = URL(string: "https://c560-129-59-122-28.ngrok-free.app/api/medications?query=\(searchText)&k=3") else { return }
-
-        URLSession.shared.dataTask(with: url) { data, _, error in
-            if let data = data {
-                do {
-                    let response = try JSONDecoder().decode(MedicationResponse.self, from: data)
-                    DispatchQueue.main.async {
-                        searchResults = response.results
-                    }
-                } catch {
-                    print("Error decoding medication results: \(error)")
-                }
+        let finder = MedicationMatcher()
+        finder.findClosestMedications(for: searchText) { results in
+            DispatchQueue.main.async {
+                searchResults = results
             }
-        }.resume()
+        }
     }
 }
 

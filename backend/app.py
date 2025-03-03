@@ -56,7 +56,7 @@ async def get_medications(query: str = Query(..., description="Keywords for medi
     results = find_closest_medications(query, medication_vectors_db, model, k)
     return MedicationResponse(results=results)
 
-@app.get("/fda_translate")
+@app.get("/api/fda_translate")
 def fda_translate(medication: str = Query(..., description="Medication name to query FDA API"),
                   max_new_tokens: int = Query(256, description="Max tokens for translation"),
                   top_p: float = Query(0.9, description="Top p for translation"),

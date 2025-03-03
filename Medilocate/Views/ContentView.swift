@@ -2,7 +2,6 @@ import SwiftUI
 import PhotosUI
 
 struct ContentView: View {
-    /// TODO: This is stupid. Jimmy please get backend done
     @State private var searchText: String = ""
     @State private var selectedItem: PhotosPickerItem? = nil
     @State private var selectedImage: UIImage?
@@ -11,8 +10,11 @@ struct ContentView: View {
     // State control vars
     @State private var searchResults: [String]? = nil
     @State private var navigateToPostSearch = false
-    /// TODO: This is also stupid and needs to go
-    private let finder = MedicationMatcher(csvFileName: "unique_prod_names")
+    
+    // Define global vars
+    struct Key {
+        static let backend_path = "https://f541-129-59-122-27.ngrok-free.app/api/"
+    }
     
     var body: some View {
         NavigationStack {
@@ -44,7 +46,7 @@ struct ContentView: View {
                         .disabled(searchText.isEmpty)
                     }
                     
-                    // Upload Pic
+                    // Upload Picture
                     PhotosPicker(selection: $selectedItem, matching: .images) {
                         HStack {
                             Image(systemName: "photo.on.rectangle")
@@ -65,7 +67,7 @@ struct ContentView: View {
                         }
                     }
                     
-                    // Take pic
+                    // Take Picture
                     Button(action: {
                         isCameraPresented.toggle()
                     }) {
@@ -90,7 +92,7 @@ struct ContentView: View {
                 )
                 .padding(40)
                 
-                // State variables trigger Navigation to postsearch
+                // Navigation to PostSearchView when results are available
                 NavigationLink(
                     destination: PostSearchView(searchResults: searchResults ?? []),
                     isActive: $navigateToPostSearch,
@@ -101,43 +103,48 @@ struct ContentView: View {
             .navigationTitle("Medilocate")
         }
         .overlay(
-                    BottomNavigationBar(),
-                    alignment: .bottom
-                )
+            BottomNavigationBar(),
+            alignment: .bottom
+        )
     }
     
-    // Uses OCR to recognize text from an image, then finds the closest medication names.
+
+    private let finder = MedicationMatcher()
+    // Uses OCR to recognize text, then calls the backend matching function.
     func recognizeText(in image: UIImage) {
-        // Immediately dismiss the camera view on the main thread.
+        // Immediately dismiss the camera view.
         DispatchQueue.main.async {
             isCameraPresented = false
         }
-
+        
         TextRecognition.shared.recognizeText(in: image) { recognizedText in
-            // split recognized text, and choose top 3
-            let candidates = recognizedText.components(separatedBy: ",").filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+            // Split recognized text and choose top 3 candidates.
+            let candidates = recognizedText.components(separatedBy: ",")
+                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                .filter { !$0.isEmpty }
             let topCandidates = candidates.prefix(3)
             let query = topCandidates.joined(separator: " ")
             
             detectedText = query
             UserDefaults.standard.set(detectedText, forKey: "ocrResponse")
             
-            // call knn matching function
-            let results = finder.findClosestMedications(for: detectedText, k: 3)
+            finder.findClosestMedications(for: detectedText) { results in
+                DispatchQueue.main.async {
+                    searchResults = results
+                    navigateToPostSearch = true
+                }
+            }
+        }
+    }
+    
+    // Medicine Matching for the result in the search bar
+    func performSearch() {
+        finder.findClosestMedications(for: searchText) { results in
             DispatchQueue.main.async {
                 searchResults = results
                 navigateToPostSearch = true
             }
         }
-    }
-
-
-    
-    // Performs a search using the text in the search bar.
-    func performSearch() {
-        let results = finder.findClosestMedications(for: searchText, k: 3)
-        searchResults = results
-        navigateToPostSearch = true
     }
     
     @State private var isCameraPresented = false
