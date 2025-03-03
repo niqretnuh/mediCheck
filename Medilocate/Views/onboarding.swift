@@ -114,7 +114,7 @@ struct OnboardingView: View {
     }
 
     private func submitUserData() {
-        guard let url = URL(string: "https://62b5-129-59-122-28.ngrok-free.app/api/users") else {
+        guard let url = URL(string: "https://c560-129-59-122-28.ngrok-free.app/api/users") else {
             self.errorMessage = "Invalid API URL"
             self.showError = true
             return
@@ -220,7 +220,7 @@ struct MedicationSearchView: View {
     }
 
     private func performSearch() {
-        guard let url = URL(string: "https://62b5-129-59-122-28.ngrok-free.app/api/medications?query=\(searchText)&k=3") else { return }
+        guard let url = URL(string: "https://c560-129-59-122-28.ngrok-free.app/api/medications?query=\(searchText)&k=3") else { return }
 
         URLSession.shared.dataTask(with: url) { data, _, error in
             if let data = data {
