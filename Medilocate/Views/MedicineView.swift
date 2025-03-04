@@ -1,38 +1,63 @@
 import SwiftUI
+import PhotosUI
 
 struct MedicineView: View {
     let medication: String
     @State private var bulletPoints: [String] = []
     @State private var isLoading = true
     @State private var errorMessage: String? = nil
-    
+    @State private var navigateToInteractions = false
+
     var body: some View {
-        VStack {
-            if isLoading {
-                ProgressView("Loading FDA translation...")
-                    .padding()
-            } else if let errorMessage = errorMessage {
-                Text("Error: \(errorMessage)")
-                    .foregroundColor(.red)
-                    .padding()
-            } else {
-                List(bulletPoints, id: \.self) { bullet in
-                    Text(bullet)
-                        .padding(.vertical, 4)
+        NavigationStack {
+            ZStack {
+                Color.blue.opacity(0.2)
+                    .ignoresSafeArea()
+                VStack {
+                    if isLoading {
+                        ProgressView("Loading FDA translation...")
+                            .padding()
+                    } else if let errorMessage = errorMessage {
+                        Text("Error: \(errorMessage)")
+                            .foregroundColor(.red)
+                            .padding()
+                    } else {
+                        List(bulletPoints, id: \.self) { bullet in
+                            Text(bullet)
+                                .padding(.vertical, 4)
+                        }
+                    }
                 }
+                .navigationTitle(medication)
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button("Add Medication") {
+                            navigateToInteractions = true
+                        }
+                    }
+                }
+                .onAppear {
+                    fetchFDATranslation()
+                }
+                // NavigationLink to the next page (InteractionsView)
+                NavigationLink(
+                    destination: InteractionsView(medication: medication),
+                    isActive: $navigateToInteractions,
+                    label: { EmptyView() }
+                )
+                .hidden()
             }
-        }
-        .navigationTitle(medication)
-        .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Button("Add Medication", action: addMedication)
-            }
-        }
-        .onAppear {
-            fetchFDATranslation()
         }
     }
     
+    /// Splits the generated text by newline, trims each line, and filters out empty lines.
+    func processGeneratedText(_ text: String) -> [String] {
+        return text.components(separatedBy: "\n")
+                    .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                    .filter { !$0.isEmpty }
+    }
+    
+    /// Fetches FDA translation from the backend and processes it into an array of lines.
     func fetchFDATranslation() {
         guard let encodedMedication = medication.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
               let url = URL(string: "\(ContentView.Key.backend_path)fda_translate?medication=\(encodedMedication)&max_new_tokens=256&top_p=0.9&temperature=0.6")
@@ -59,20 +84,18 @@ struct MedicineView: View {
             }
             do {
                 if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
-                    var resultText: String = ""
-                    if let generatedText = json["generated_text"] as? String {
-                        resultText = generatedText
-                        print(resultText)
+                    var generatedText: String = ""
+                    if let text = json["generated_text"] as? String {
+                        generatedText = text
+                        print("Generated Text: \(generatedText)")
                     } else {
-                        resultText = String(data: data, encoding: .utf8) ?? ""
+                        generatedText = String(data: data, encoding: .utf8) ?? ""
                     }
-                    // Split the generated text into bullet points
-                    let bullets = resultText
-                        .components(separatedBy: "\n")
-                        .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-                        .filter { !$0.isEmpty }
+                    
+                    // Process the generated text line by line.
+                    let processedLines = processGeneratedText(generatedText)
                     DispatchQueue.main.async {
-                        self.bulletPoints = bullets
+                        self.bulletPoints = processedLines
                         self.isLoading = false
                     }
                 }
@@ -81,54 +104,6 @@ struct MedicineView: View {
                     self.errorMessage = error.localizedDescription
                     self.isLoading = false
                 }
-            }
-        }.resume()
-    }
-    
-    func addMedication() {
-        // Retrieve the user's identifier from the Keychain
-        guard let userId = KeychainHelper.getUserIdentifier() else {
-            print("User ID not found in Keychain")
-            return
-        }
-        // Update medications.
-        guard let url = URL(string: "\(ContentView.Key.backend_path)users/\(userId)/medications") else {
-            print("Invalid URL for updating medications")
-            return
-        }
-        
-        // Json body
-        let body: [String: Any] = [
-            "medicationsToAdd": [medication],
-            "medicationsToRemove": []
-        ]
-        
-        var request = URLRequest(url: url)
-        request.httpMethod = "PATCH"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        do {
-            request.httpBody = try JSONSerialization.data(withJSONObject: body)
-        } catch {
-            print("Error serializing JSON: \(error)")
-            return
-        }
-        
-        // Debugging prints
-        URLSession.shared.dataTask(with: request) { data, response, error in
-            if let error = error {
-                print("Error updating medication: \(error.localizedDescription)")
-                return
-            }
-            guard let data = data else {
-                print("No data received when updating medication")
-                return
-            }
-            do {
-                if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
-                    print("Medication update response: \(json)")
-                }
-            } catch {
-                print("Error parsing medication update response: \(error)")
             }
         }.resume()
     }

@@ -37,10 +37,9 @@ def translate_text(text: str, max_new_tokens: int = 500, top_p: float = 0.9, tem
     """
     system_prompt = (
         "Provide me with the following in bullet point form using the information from the FDA that is clear, concise, and easy-to understand." 
-        "This current user is 60 year old female that is pregnant." 
-        "I want: Drug Name, Ingredients, Purpose and Usage, Dosage and Administration (based on the Age of the patient, do not give irrelevant information that does not fit patient's age)."
-        "Adverse Ingredients (use ask_doctor_or_pharmacist for this), Warnings and Adverse Reaction (use the warnings section)"
-        "SHOW ONLY IF THE USER IS PREGNANT or breastfeeding (use the warnings section)"
+        "I want: Drug Name, Ingredients, Purpose and Usage, Dosage and Administration, Adverse Ingredients (use ask_doctor_or_pharmacist for this), Warnings and Adverse Reaction (use the warnings section)"
+        "Each provision should be one bullet point and explained with only one clear and concise sentence without any medical jargon."
+        "Return all the requested bullet points, separated by new lines. Only provide a bulleted list and no other texts."
     )
 
     prompt = (
@@ -131,6 +130,58 @@ def fda_translate(medication: str = Query(..., description="Medication name to q
         return translation_result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to generate translation: {str(e)}")
+
+@app.get("/api/interactions")
+async def get_interactions(
+    user_id: str = Query(..., description="User ID for the current user"),
+    medication: str = Query(..., description="New medication to check for interactions"),
+    max_new_tokens: int = Query(256, description="Max tokens for LLM response"),
+    top_p: float = Query(0.9, description="Top p for LLM response"),
+    temperature: float = Query(0.6, description="Temperature for LLM response")
+):
+    # retrieve user from MongoDB
+    user = await db['users'].find_one({"_id": ObjectId(user_id)})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    current_medications = user.get("medications", [])
+    
+    fda_url = f"https://api.fda.gov/drug/label.json?search=drug_interactions:{medication}&limit=1"
+    try:
+        fda_response = requests.get(fda_url)
+        fda_response.raise_for_status()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch FDA data: {str(e)}")
+    
+    data = fda_response.json()
+    if "results" not in data or len(data["results"]) == 0:
+        interaction_text = "No interaction information available."
+    else:
+        result = data["results"][0]
+
+        def extract_field(key: str):
+            value = result.get(key, "")
+            if isinstance(value, list):
+                return " ".join(value)
+            return value
+        interaction_text = extract_field("drug_interactions")
+        if not interaction_text:
+            interaction_text = "No interaction information available."
+    
+    prompt = (
+        f"User is currently taking: {', '.join(current_medications) if current_medications else 'None'}.\n"
+        f"New medication to be added: {medication}.\n"
+        f"FDA interaction information for the new medication: {interaction_text}\n\n"
+        "Based on the above information, list any potential drug interactions that the user should be aware of. "
+        "If there are no significant interactions, respond with 'No significant interactions found.'"
+    )
+    
+    try:
+        llm_output = generate_response(prompt, max_new_tokens, top_p, temperature)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to generate LLM response: {str(e)}")
+    
+    return {"interactions": llm_output}
+
 
 # User-related endpoints remain unchanged
 @app.post("/api/users", response_model=dict)
