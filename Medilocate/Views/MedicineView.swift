@@ -86,19 +86,18 @@ struct MedicineView: View {
     }
     
     func addMedication() {
-        // Retrieve the user's identifier from the Keychain using your predefined helper.
+        // Retrieve the user's identifier from the Keychain
         guard let userId = KeychainHelper.getUserIdentifier() else {
             print("User ID not found in Keychain")
             return
         }
-        
-        // Build the URL for the PATCH request to update medications.
+        // Update medications.
         guard let url = URL(string: "\(ContentView.Key.backend_path)users/\(userId)/medications") else {
             print("Invalid URL for updating medications")
             return
         }
         
-        // Construct the JSON body with medicationsToAdd (and no removals).
+        // Json body
         let body: [String: Any] = [
             "medicationsToAdd": [medication],
             "medicationsToRemove": []
@@ -114,6 +113,7 @@ struct MedicineView: View {
             return
         }
         
+        // Debugging prints
         URLSession.shared.dataTask(with: request) { data, response, error in
             if let error = error {
                 print("Error updating medication: \(error.localizedDescription)")

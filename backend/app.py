@@ -62,7 +62,7 @@ async def get_medications(
 ):
     if not query:
         raise HTTPException(status_code=400, detail="Query parameter is required")
-    let_keywords = [word.strip() for word in query.splitlines() if word.strip()]
+    let_keywords = [word.strip() for word in query.split(' ') if word.strip()]
     
     while len(let_keywords) < 3:
         let_keywords.append(let_keywords[-1])
@@ -80,10 +80,11 @@ async def get_medications(
         asyncio.to_thread(find_closest_medications, q2, medication_vectors, k+1),
         asyncio.to_thread(find_closest_medications, q3, medication_vectors, k)
     )
-
-    print(result1, result2, result3)
+    combined_results = result1+result2+result3
+    print(combined_results)
+    unique_results = list(dict.fromkeys(combined_results))
     return CombinedMedicationResponse(
-        results = result1+result2+result3
+        results = unique_results
     )
 
 @app.get("/api/fda_translate")
