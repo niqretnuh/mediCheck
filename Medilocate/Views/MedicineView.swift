@@ -50,17 +50,23 @@ struct MedicineView: View {
         }
     }
     
-    /// Splits the generated text by newline, trims each line, and filters out empty lines.
+    // Splits the generated text by newline, trims each line, and filters out empty lines.
     func processGeneratedText(_ text: String) -> [String] {
         return text.components(separatedBy: "\n")
                     .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
                     .filter { !$0.isEmpty }
     }
     
-    /// Fetches FDA translation from the backend and processes it into an array of lines.
+    // Fetches FDA translation from the backend and processes it into an array of lines.
     func fetchFDATranslation() {
+        guard let userId = KeychainHelper.getUserIdentifier() else {
+            self.errorMessage = "User not found"
+            self.isLoading = false
+            return
+        }
+        
         guard let encodedMedication = medication.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
-              let url = URL(string: "\(ContentView.Key.backend_path)fda_translate?medication=\(encodedMedication)&max_new_tokens=256&top_p=0.9&temperature=0.6")
+              let url = URL(string: "\(ContentView.Key.backend_path)fda_translate?user_id=\(userId)&medication=\(encodedMedication)&max_new_tokens=256&top_p=0.9&temperature=0.6")
         else {
             self.errorMessage = "Invalid URL"
             self.isLoading = false

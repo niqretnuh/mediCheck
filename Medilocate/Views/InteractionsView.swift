@@ -72,15 +72,17 @@ struct InteractionsView: View {
                 return
             }
             do {
-                if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-                   let interactionsArray = json["generated_text"] as? [String] {
-                    DispatchQueue.main.async {
-                        self.interactions = interactionsArray
-                        self.isLoading = false
+                if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                    var generatedText: String = ""
+                    if let text = json["generated_text"] as? String {
+                        generatedText = text
+                        print("Generated Text: \(generatedText)")
+                    } else {
+                        generatedText = String(data: data, encoding: .utf8) ?? ""
                     }
-                } else {
+                    let processedLines = processGeneratedText(generatedText)
                     DispatchQueue.main.async {
-                        self.errorMessage = "Unexpected response format"
+                        self.interactions = processedLines
                         self.isLoading = false
                     }
                 }
@@ -92,7 +94,11 @@ struct InteractionsView: View {
             }
         }.resume()
     }
-    
+    func processGeneratedText(_ text: String) -> [String] {
+        return text.components(separatedBy: "\n")
+                    .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                    .filter { !$0.isEmpty }
+    }
     func addMedication() {
         // Build the URL for the PATCH request to update medications.
         guard let userId = KeychainHelper.getUserIdentifier() else {

@@ -13,7 +13,7 @@ class User(BaseModel):
     email: EmailStr
     medications: List[str]
     gender: str
-    dateofbirth: str
+    age: str
     pregnant: bool
 
 class UserUpdate(BaseModel):
@@ -21,7 +21,7 @@ class UserUpdate(BaseModel):
     email: Optional[EmailStr] = None
     medications: Optional[List[str]] = None
     gender: Optional[str] = None
-    dateofbirth: Optional[str] = None
+    age: Optional[str] = None
     pregnant: Optional[bool] = None
 
 class MedicationUpdate(BaseModel):

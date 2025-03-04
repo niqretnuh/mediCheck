@@ -126,7 +126,7 @@ struct OnboardingView: View {
             "email": email,
             "medications": selectedMedications,
             "gender": gender,
-            "dateofbirth": calculateDOB(from: age),
+            "age": age,
             "pregnant": gender == "Female" ? isPregnant : false
         ]
 
@@ -178,15 +178,6 @@ struct OnboardingView: View {
                 }
             }
         }.resume()
-    }
-
-    private func calculateDOB(from age: String) -> String {
-        if let ageInt = Int(age) {
-            let currentYear = Calendar.current.component(.year, from: Date())
-            let birthYear = currentYear - ageInt
-            return "\(birthYear)-01-01"
-        }
-        return "Unknown"
     }
 }
 

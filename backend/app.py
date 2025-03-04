@@ -31,15 +31,25 @@ client = AsyncIOMotorClient(MONGO_URI, tls=True, tlsAllowInvalidCertificates=Tru
 db = client[DB_NAME]
 collection = db[COLLECTION_NAME]
 
-def translate_text(text: str, max_new_tokens: int = 500, top_p: float = 0.9, temperature: float = 0.6) -> str:
+def translate_text(text: str, max_new_tokens: int = 550, top_p: float = 0.9, temperature: float = 0.6, age="20", gender="male", ispregnant=False) -> str:
     """
     Constructs the translation prompt and calls the SageMaker endpoint.
     """
+    pregnancy = "Pregnant" if ispregnant else "Not pregnant"
     system_prompt = (
-        "Provide me with the following in bullet point form using the information from the FDA that is clear, concise, and easy-to understand." 
-        "I want: Drug Name, Ingredients, Purpose and Usage, Dosage and Administration, Adverse Ingredients (use ask_doctor_or_pharmacist for this), Warnings and Adverse Reaction (use the warnings section)"
-        "Each provision should be one bullet point and explained with only one clear and concise sentence without any medical jargon."
-        "Return all the requested bullet points, separated by new lines. Only provide a bulleted list and no other texts."
+        f"Please translate the following FDA information into a personalized, bullet-point list that is clear, concise, and easy-to-understand. "
+        f"Do not exceed 500 tokens in your response.\n\n"
+        "Include the following details: Drug Name, Ingredients, Purpose and Usage, Dosage and Administration, "
+        "Adverse Ingredients (use 'ask doctor or pharmacist' if needed), and Warnings/Adverse Reactions.\n\n"
+        "Now, consider the following personal information about the user to tailor your response:\n"
+        f"- The user's age is {age}.\n"
+        f"- The user's gender is {gender}.\n"
+        f"- The user is {pregnancy}.\n\n"
+        "If the user is under 18, advise them to consult an adult before taking any medication. "
+        "If the user is elderly, use simpler vocabulary and a considerate tone. "
+        "If the user is pregnant, include specific pregnancy-related warnings regarding adverse reactions; otherwise, omit them.\n\n"
+        "Each bullet point should summarize one key fact in a single, clear, and concise sentence without any medical jargon. "
+        "Return only the bullet points separated by new lines, with no additional text."
     )
 
     prompt = (
@@ -87,12 +97,22 @@ async def get_medications(
     )
 
 @app.get("/api/fda_translate")
-def fda_translate(medication: str = Query(..., description="Medication name to query FDA API"),
-                  max_new_tokens: int = Query(256, description="Max tokens for translation"),
-                  top_p: float = Query(0.9, description="Top p for translation"),
-                  temperature: float = Query(0.6, description="Temperature for translation")):
+async def fda_translate(
+        user_id: str = Query(..., description="User ID for the current user"),
+        medication: str = Query(..., description="Medication name to query FDA API"),
+        max_new_tokens: int = Query(256, description="Max tokens for translation"),
+        top_p: float = Query(0.9, description="Top p for translation"),
+        temperature: float = Query(0.6, description="Temperature for translation")):
     # Query FDA API using openFDA's drug label endpoint.
     fda_url = f"https://api.fda.gov/drug/label.json?search=openfda.brand_name:{medication}&limit=1"
+    # retrieve user from MongoDB
+    user = await db['users'].find_one({"_id": ObjectId(user_id)})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    user_age = user.get("age", "20")
+    user_gender = user.get("gender", "male")
+    is_pregnant = user.get("pregnant", False)
+
     try:
         fda_response = requests.get(fda_url)
         fda_response.raise_for_status()
@@ -126,7 +146,7 @@ def fda_translate(medication: str = Query(..., description="Medication name to q
     )
     
     try:
-        translation_result = translate_text(combined_text, max_new_tokens, top_p, temperature)
+        translation_result = translate_text(combined_text, max_new_tokens, top_p, temperature, user_age, user_gender, is_pregnant)
         return translation_result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to generate translation: {str(e)}")
@@ -146,14 +166,16 @@ async def get_interactions(
     current_medications = user.get("medications", [])
     
     fda_url = f"https://api.fda.gov/drug/label.json?search=drug_interactions:{medication}&limit=1"
+    found_reponse = True
     try:
         fda_response = requests.get(fda_url)
         fda_response.raise_for_status()
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to fetch FDA data: {str(e)}")
-    
-    data = fda_response.json()
-    if "results" not in data or len(data["results"]) == 0:
+        found_response = False
+
+    if found_response:
+        data = fda_response.json()
+    if found_response == False or "results" not in data or len(data["results"]) == 0:
         interaction_text = "No interaction information available."
     else:
         result = data["results"][0]
@@ -166,13 +188,25 @@ async def get_interactions(
         interaction_text = extract_field("drug_interactions")
         if not interaction_text:
             interaction_text = "No interaction information available."
-    
-    prompt = (
+    system_prompt = (
+        "User is seeking to start taking a new medication, but want to make sure there are no adverse interactions with the current medications. I will provide you a list of medications a user is currently taking. "
+        "Based on this list of current medication and the FDA's data on the substances that interact with the new medication, please make inferences of whether every medication on the list interacts with the new medication"
+        "If any of the current medication is known to have adverse interaction with the new medication, please generate a bullet point consisted of what that current medication is, and a concise explanation of why it is (paraphrase the FDA text)"
+        "If no significant interactions found or the using is not taking any medications, say no interaction detected, consult with medical professional for help"
+        "Return only the bullet points separated by new lines, with no additional text."
+    )
+    text = (
+        ""
         f"User is currently taking: {', '.join(current_medications) if current_medications else 'None'}.\n"
         f"New medication to be added: {medication}.\n"
         f"FDA interaction information for the new medication: {interaction_text}\n\n"
         "Based on the above information, list any potential drug interactions that the user should be aware of. "
-        "If there are no significant interactions, respond with 'No significant interactions found.'"
+    )
+    prompt = (
+        "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n"
+        f"{system_prompt} <|eot_id|><|start_header_id|>user<|end_header_id|>\n\n"
+        f"{text}\n"
+        "<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n"
     )
     
     try:

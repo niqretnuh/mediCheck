@@ -113,7 +113,7 @@ struct UserProfileView: View {
         }
     }
     
-    /// Loads the current user info using a GET request.
+    // Loads the current user info using a GET request.
     func loadUserData() {
         guard let userID = KeychainHelper.getUserIdentifier() else {
             self.errorMessage = "User not found."
@@ -140,7 +140,7 @@ struct UserProfileView: View {
                   let email = responseJSON["email"] as? String,
                   let medications = responseJSON["medications"] as? [String],
                   let gender = responseJSON["gender"] as? String,
-                  let dateofbirth = responseJSON["dateofbirth"] as? String,
+                  let age = responseJSON["age"] as? String,
                   let pregnant = responseJSON["pregnant"] as? Bool
             else {
                 DispatchQueue.main.async {
@@ -153,11 +153,7 @@ struct UserProfileView: View {
             DispatchQueue.main.async {
                 self.name = name
                 self.email = email
-                // Calculate age from date of birth (assumes date is in "YYYY-MM-DD" format)
-                if let birthYear = Int(dateofbirth.prefix(4)) {
-                    let currentYear = Calendar.current.component(.year, from: Date())
-                    self.age = "\(currentYear - birthYear)"
-                }
+                self.age = age
                 self.selectedMedications = medications
                 self.gender = gender
                 self.isPregnant = pregnant
@@ -165,7 +161,7 @@ struct UserProfileView: View {
         }.resume()
     }
     
-    /// Sends a PUT request to update the user data.
+    // Sends a PUT request to update the user data.
     func updateUserData() {
         guard let userID = KeychainHelper.getUserIdentifier() else {
             self.errorMessage = "User not found."
@@ -183,7 +179,7 @@ struct UserProfileView: View {
             "email": email,
             "medications": selectedMedications,
             "gender": gender,
-            "dateofbirth": calculateDOB(from: age),
+            "age": age,
             "pregnant": gender == "Female" ? isPregnant : false
         ]
         
@@ -217,18 +213,7 @@ struct UserProfileView: View {
                 return
             }
             DispatchQueue.main.async {
-                // Optionally provide feedback to the user (such as a success message)
             }
         }.resume()
-    }
-    
-    /// Converts an age string to a date of birth string in "YYYY-01-01" format.
-    private func calculateDOB(from age: String) -> String {
-        if let ageInt = Int(age) {
-            let currentYear = Calendar.current.component(.year, from: Date())
-            let birthYear = currentYear - ageInt
-            return "\(birthYear)-01-01"
-        }
-        return "Unknown"
     }
 }
