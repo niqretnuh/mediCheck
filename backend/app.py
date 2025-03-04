@@ -25,7 +25,6 @@ from user_utils import serialize_user, User, UserUpdate, MedicationUpdate
 app = FastAPI()
 
 # MongoDB Configuration
-MONGO_URI = ""
 DB_NAME = "medilocate"
 COLLECTION_NAME = "users"
 client = AsyncIOMotorClient(MONGO_URI, tls=True, tlsAllowInvalidCertificates=True)
