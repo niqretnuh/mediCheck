@@ -8,9 +8,11 @@ from pymongo import ReturnDocument
 import uvicorn
 import requests
 import json
+import asyncio
 
-from sagemaker_client import generate_response  # Handles SageMaker API calls
-from medication_matcher import find_closest_medications, model, get_medication_vectors_from_db
+from sagemaker_client import generate_response  
+#from medication_matcher import find_closest_medications, model, get_medication_vectors_from_db
+from medication_matcher import find_closest_medications, get_medication_vectors_from_db
 from user_utils import serialize_user, User, UserUpdate, MedicationUpdate
 
 app = FastAPI()
@@ -44,18 +46,39 @@ def translate_text(text: str, max_new_tokens: int = 500, top_p: float = 0.9, tem
     
     return generate_response(prompt, max_new_tokens, top_p, temperature)
 
-class MedicationResponse(BaseModel):
+class CombinedMedicationResponse(BaseModel):
     results: List[str]
 
-@app.get("/api/medications", response_model=MedicationResponse)
-async def get_medications(query: str = Query(..., description="Keywords for medication search"),
-                          k: int = Query(3, description="Number of nearest neighbors to return", gt=0)):
+@app.get("/api/medications", response_model=CombinedMedicationResponse)
+async def get_medications(
+    query: str = Query(..., description="Keywords for medication search (separated by newline)"),
+    k: int = Query(1, description="Number of nearest neighbors to return for each inference", gt=0)
+):
     if not query:
         raise HTTPException(status_code=400, detail="Query parameter is required")
-    # Load medication vectors from MongoDB collection "medications"
-    medication_vectors_db = await get_medication_vectors_from_db(db)
-    results = find_closest_medications(query, medication_vectors_db, model, k)
-    return MedicationResponse(results=results)
+    let_keywords = [word.strip() for word in query.splitlines() if word.strip()]
+    
+    while len(let_keywords) < 3:
+        let_keywords.append(let_keywords[-1])
+    
+    # Build three queries using increasing prefixes:
+    q1 = let_keywords[0]
+    q2 = " ".join(let_keywords[:2])
+    q3 = " ".join(let_keywords[:3])
+    print(q1, q2, q3)
+    
+    # Retrieve medication names from the "medications" collection (cached)
+    medication_vectors = await get_medication_vectors_from_db(db)
+    result1, result2, result3 = await asyncio.gather(
+        asyncio.to_thread(find_closest_medications, q1, medication_vectors, k+2),
+        asyncio.to_thread(find_closest_medications, q2, medication_vectors, k+1),
+        asyncio.to_thread(find_closest_medications, q3, medication_vectors, k)
+    )
+
+    print(result1, result2, result3)
+    return CombinedMedicationResponse(
+        results = result1+result2+result3
+    )
 
 @app.get("/api/fda_translate")
 def fda_translate(medication: str = Query(..., description="Medication name to query FDA API"),
