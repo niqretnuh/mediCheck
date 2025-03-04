@@ -23,13 +23,17 @@ struct MedicineView: View {
             }
         }
         .navigationTitle(medication)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button("Add Medication", action: addMedication)
+            }
+        }
         .onAppear {
             fetchFDATranslation()
         }
     }
     
     func fetchFDATranslation() {
-        print(ContentView.Key.backend_path)
         guard let encodedMedication = medication.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
               let url = URL(string: "\(ContentView.Key.backend_path)fda_translate?medication=\(encodedMedication)&max_new_tokens=256&top_p=0.9&temperature=0.6")
         else {
@@ -80,9 +84,57 @@ struct MedicineView: View {
             }
         }.resume()
     }
+    
+    func addMedication() {
+        // Retrieve the user's identifier from the Keychain using your predefined helper.
+        guard let userId = KeychainHelper.getUserIdentifier() else {
+            print("User ID not found in Keychain")
+            return
+        }
+        
+        // Build the URL for the PATCH request to update medications.
+        guard let url = URL(string: "\(ContentView.Key.backend_path)users/\(userId)/medications") else {
+            print("Invalid URL for updating medications")
+            return
+        }
+        
+        // Construct the JSON body with medicationsToAdd (and no removals).
+        let body: [String: Any] = [
+            "medicationsToAdd": [medication],
+            "medicationsToRemove": []
+        ]
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "PATCH"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        do {
+            request.httpBody = try JSONSerialization.data(withJSONObject: body)
+        } catch {
+            print("Error serializing JSON: \(error)")
+            return
+        }
+        
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                print("Error updating medication: \(error.localizedDescription)")
+                return
+            }
+            guard let data = data else {
+                print("No data received when updating medication")
+                return
+            }
+            do {
+                if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                    print("Medication update response: \(json)")
+                }
+            } catch {
+                print("Error parsing medication update response: \(error)")
+            }
+        }.resume()
+    }
 }
 
-struct FDAResultView_Previews: PreviewProvider {
+struct MedicineView_Previews: PreviewProvider {
     static var previews: some View {
         NavigationView {
             MedicineView(medication: "Aspirin")

@@ -118,8 +118,7 @@ struct ContentView: View {
         }
         
         TextRecognition.shared.recognizeText(in: image) { recognizedText in
-            // Split recognized text and choose top 3 candidates.
-            let candidates = recognizedText.components(separatedBy: "\n")
+            let candidates = recognizedText.components(separatedBy: .whitespacesAndNewlines)
                 .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
                 .filter { !$0.isEmpty }
             let topCandidates = candidates.prefix(3)
