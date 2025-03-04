@@ -9,6 +9,13 @@ import uvicorn
 import requests
 import json
 import asyncio
+import os
+
+from dotenv import load_dotenv
+load_dotenv()
+MONGO_URI = os.getenv("MONGO_URI")
+PORT = os.getenv("PORT")
+
 
 from sagemaker_client import generate_response  
 #from medication_matcher import find_closest_medications, model, get_medication_vectors_from_db
@@ -18,7 +25,7 @@ from user_utils import serialize_user, User, UserUpdate, MedicationUpdate
 app = FastAPI()
 
 # MongoDB Configuration
-MONGO_URI = "mongodb+srv://medisaver:revasidem@medilocate.wk6ta.mongodb.net/?retryWrites=true&w=majority&appName=Medilocate"
+MONGO_URI = ""
 DB_NAME = "medilocate"
 COLLECTION_NAME = "users"
 client = AsyncIOMotorClient(MONGO_URI, tls=True, tlsAllowInvalidCertificates=True)
