@@ -188,4 +188,4 @@ async def update_medications(id: str, medication_update: MedicationUpdate):
     return {"user": serialize_user(updated_user), "message": "Medications updated successfully"}
 
 if __name__ == "__main__":
-    uvicorn.run("app:app", host="0.0.0.0", port=8888, reload=True)
+    uvicorn.run("app:app", host="0.0.0.0", port=PORT, reload=True)
