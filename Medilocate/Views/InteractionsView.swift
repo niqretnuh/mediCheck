@@ -142,7 +142,7 @@ struct InteractionsView: View {
 struct InteractionsView_Previews: PreviewProvider {
     static var previews: some View {
         NavigationView {
-            InteractionsView(medication: "Aspirin")
+            InteractionsView(medication: "TYLENOL")
         }
     }
 }

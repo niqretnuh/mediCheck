@@ -101,12 +101,8 @@ struct ContentView: View {
                 )
                 .hidden()
             }
-            .navigationTitle("Medilocate")
+            BottomNavigationBar()
         }
-        .overlay(
-            BottomNavigationBar(),
-            alignment: .bottom
-        )
     }
     
 
