@@ -73,7 +73,7 @@ struct InteractionsView: View {
             }
             do {
                 if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-                   let interactionsArray = json["interactions"] as? [String] {
+                   let interactionsArray = json["generated_text"] as? [String] {
                     DispatchQueue.main.async {
                         self.interactions = interactionsArray
                         self.isLoading = false
