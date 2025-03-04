@@ -6,7 +6,7 @@ class MedicationMatcher {
     ///   - query: The medication search query.
     ///   - k: The number of results to return (default is 3).
     ///   - completion: Completion handler with an array of matched medication names.
-    func findClosestMedications(for query: String, k: Int = 3, completion: @escaping ([String]) -> Void) {
+    func findClosestMedications(for query: String, k: Int = 1, completion: @escaping ([String]) -> Void) {
 
         guard let encodedQuery = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
               let url = URL(string: "\(ContentView.Key.backend_path)medications?query=\(encodedQuery)&k=\(k)") else {
