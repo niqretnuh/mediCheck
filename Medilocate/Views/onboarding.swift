@@ -1,8 +1,9 @@
 import SwiftUI
 
 struct OnboardingView: View {
+    @Binding var hasProfile: Bool
     @State private var name: String = ""
-    @State private var email: String = ""
+    @State private var email: String = UserDefaults.standard.string(forKey: "userEmail") ?? ""
     @State private var age: String = ""
     @State private var gender: String = "Select Gender"
     @State private var selectedMedications: [String] = []
@@ -168,6 +169,8 @@ struct OnboardingView: View {
                         KeychainHelper.save(userIdentifier: userID)
                         UserDefaults.standard.set(email, forKey: "userEmail")
                         isAuthenticated = true
+                        UserDefaults.standard.set(true, forKey: "hasProfile")
+                        hasProfile = true
                     }
                 } catch {
                     self.errorMessage = "Error processing server response"
@@ -234,5 +237,5 @@ struct MedicationResponse: Codable {
 }
 
 #Preview {
-    OnboardingView()
+    OnboardingView(hasProfile:.constant(false) )
 }
