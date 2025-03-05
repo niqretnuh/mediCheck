@@ -2,11 +2,11 @@ import SwiftUI
 
 @main
 struct MedilocateApp: App {
-    // Check if the user is authenticated via Apple ID.
-    @State private var isAuthenticated: Bool = KeychainHelper.getUserIdentifier() != nil
+    // Always require login on app launch
+    @State private var isAuthenticated: Bool = false
     // Check if the user’s profile is complete.
-    @State private var hasProfile: Bool = UserDefaults.standard.bool(forKey: "hasProfile")
-    
+    @State private var hasProfile: Bool = false
+
     var body: some Scene {
         WindowGroup {
             if !isAuthenticated {
