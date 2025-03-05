@@ -15,7 +15,7 @@ struct MedicineView: View {
                     .ignoresSafeArea()
                 VStack {
                     if isLoading {
-                        ProgressView("Loading FDA translation...")
+                        ProgressView("Loading FDA Data...")
                             .padding()
                     } else if let errorMessage = errorMessage {
                         Text("Error: \(errorMessage)")
