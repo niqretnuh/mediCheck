@@ -38,7 +38,7 @@ def translate_text(text: str, max_new_tokens: int = 550, top_p: float = 0.9, tem
     pregnancy = "Pregnant" if ispregnant else "Not pregnant"
     system_prompt = (
         f"Please translate the following FDA information into a personalized, bullet-point list that is clear, concise, and easy-to-understand. "
-        f"Do not exceed 500 tokens in your response.\n\n"
+        f"**Do not plan to exceed 450 tokens in your response.**\n\n"
         "Include the following details: Drug Name, Ingredients, Purpose and Usage, Dosage and Administration, "
         "Adverse Ingredients (use 'ask doctor or pharmacist' if needed), and Warnings/Adverse Reactions.\n\n"
         "Now, consider the following personal information about the user to tailor your response. Especially for dosage and administration information, provide information only relevant to the patient's age.:\n"

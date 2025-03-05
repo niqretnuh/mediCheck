@@ -3,16 +3,14 @@ import PhotosUI
 
 struct MedicineView: View {
     let medication: String
-    @State private var bulletPoints: [String] = []
+    @State private var bulletViews: [Text] = []
     @State private var isLoading = true
     @State private var errorMessage: String? = nil
     @State private var navigateToInteractions = false
-
+    
     var body: some View {
         NavigationStack {
             ZStack {
-                Color.blue.opacity(0.2)
-                    .ignoresSafeArea()
                 VStack {
                     if isLoading {
                         ProgressView("Loading FDA Data...")
@@ -22,9 +20,14 @@ struct MedicineView: View {
                             .foregroundColor(.red)
                             .padding()
                     } else {
-                        List(bulletPoints, id: \.self) { bullet in
-                            Text(bullet)
-                                .padding(.vertical, 4)
+                        ScrollView {
+                            VStack(alignment: .leading, spacing: 10) {
+                                ForEach(0..<bulletViews.count, id: \.self) { index in
+                                    bulletViews[index]
+                                        .padding(.vertical, 4)
+                                }
+                            }
+                            .padding()
                         }
                     }
                 }
@@ -39,7 +42,6 @@ struct MedicineView: View {
                 .onAppear {
                     fetchFDATranslation()
                 }
-                // NavigationLink to the next page (InteractionsView)
                 NavigationLink(
                     destination: InteractionsView(medication: medication),
                     isActive: $navigateToInteractions,
@@ -50,21 +52,52 @@ struct MedicineView: View {
         }
     }
     
-    // Splits the generated text by newline, trims each line, and filters out empty lines.
-    func processGeneratedText(_ text: String) -> [String] {
-        return text.components(separatedBy: "\n")
-                    .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-                    .filter { !$0.isEmpty }
+    // Manually split the generated text into lines
+    func processGeneratedText(_ text: String) -> [Text] {
+        let lines = text.components(separatedBy: "\n")
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+        
+        let bulletMarkers: Set<Character> = ["*", "-", "+"]
+        let bulletLines: [String] = {
+            if let first = lines.first, let firstChar = first.first, !bulletMarkers.contains(firstChar) {
+                return Array(lines.dropFirst())
+            } else {
+                return lines
+            }
+        }()
+        
+        return bulletLines.map { parseBulletLine($0) }
     }
     
-    // Fetches FDA translation from the backend and processes it into an array of lines.
+    
+    func parseBulletLine(_ line: String) -> Text {
+        // Remove any leading bullet marker and whitespace.
+        var workingLine = line
+        if let first = workingLine.first, ["*", "-", "+"].contains(first) {
+            workingLine.removeFirst()
+            workingLine = workingLine.trimmingCharacters(in: .whitespaces)
+        }
+        
+        // Now, manually process bold markers (i.e., **text**).
+        let parts = workingLine.components(separatedBy: "**")
+        var formattedText = Text("")
+        for (index, part) in parts.enumerated() {
+            if index % 2 == 0 {
+                formattedText = formattedText + Text(part)
+            } else {
+                formattedText = formattedText + Text(part).bold()
+            }
+        }
+        return formattedText
+    }
+    
     func fetchFDATranslation() {
         guard let userId = KeychainHelper.getUserIdentifier() else {
             self.errorMessage = "User not found"
             self.isLoading = false
             return
         }
-        
         guard let encodedMedication = medication.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
               let url = URL(string: "\(ContentView.Key.backend_path)fda_translate?user_id=\(userId)&medication=\(encodedMedication)&max_new_tokens=256&top_p=0.9&temperature=0.6")
         else {
@@ -98,10 +131,9 @@ struct MedicineView: View {
                         generatedText = String(data: data, encoding: .utf8) ?? ""
                     }
                     
-                    // Process the generated text line by line.
-                    let processedLines = processGeneratedText(generatedText)
+                    let formattedLines = processGeneratedText(generatedText)
                     DispatchQueue.main.async {
-                        self.bulletPoints = processedLines
+                        self.bulletViews = formattedLines
                         self.isLoading = false
                     }
                 }
