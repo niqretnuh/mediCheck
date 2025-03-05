@@ -41,7 +41,7 @@ def translate_text(text: str, max_new_tokens: int = 550, top_p: float = 0.9, tem
         f"Do not exceed 500 tokens in your response.\n\n"
         "Include the following details: Drug Name, Ingredients, Purpose and Usage, Dosage and Administration, "
         "Adverse Ingredients (use 'ask doctor or pharmacist' if needed), and Warnings/Adverse Reactions.\n\n"
-        "Now, consider the following personal information about the user to tailor your response:\n"
+        "Now, consider the following personal information about the user to tailor your response. Especially for dosage and administration information, provide information only relevant to the patient's age.:\n"
         f"- The user's age is {age}.\n"
         f"- The user's gender is {gender}.\n"
         f"- The user is {pregnancy}.\n\n"
