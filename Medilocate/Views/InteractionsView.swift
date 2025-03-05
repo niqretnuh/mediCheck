@@ -5,57 +5,68 @@ struct InteractionsView: View {
     @State private var interactions: [String] = []
     @State private var isLoading = true
     @State private var errorMessage: String? = nil
-    
+    @State private var navigateToContentView = false
+
     var body: some View {
-        VStack {
-            if isLoading {
-                ProgressView("Checking interactions...")
-                    .padding()
-            } else if let errorMessage = errorMessage {
-                Text("Error: \(errorMessage)")
-                    .foregroundColor(.red)
-                    .padding()
-            } else {
-                if interactions.isEmpty {
-                    Text("No interactions detected.")
+        NavigationStack {
+            VStack {
+                if isLoading {
+                    ProgressView("Checking interactions...")
                         .padding()
-                    Button("Confirm Add Medication", action: addMedication)
+                } else if let errorMessage = errorMessage {
+                    Text("Error: \(errorMessage)")
+                        .foregroundColor(.red)
                         .padding()
                 } else {
-                    Text("Potential Drug Interactions:")
-                        .font(.headline)
-                        .padding(.top)
-                    List(interactions, id: \.self) { interaction in
-                        Text(interaction)
-                            .padding(.vertical, 4)
+                    if interactions.isEmpty {
+                        Text("No interactions detected.")
+                            .padding()
+                        Button("Add Medication", action: addMedicationAndProceed)
+                            .padding()
+                    } else {
+                        Text("Potential Drug Interactions:")
+                            .font(.headline)
+                            .padding(.top)
+                        List(interactions, id: \.self) { interaction in
+                            Text(interaction)
+                                .padding(.vertical, 4)
+                        }
+                        Button("Proceed Anyway", action: addMedicationAndProceed)
+                            .padding()
+                        Button("Cancel", action: proceedToContentView)
+                            .padding()
                     }
-                    Button("Proceed Anyway", action: addMedication)
-                        .padding()
                 }
             }
-        }
-        .navigationTitle("Interactions for \(medication)")
-        .onAppear {
-            fetchInteractions()
+            .navigationTitle("Interactions for \(medication)")
+            .onAppear {
+                fetchInteractions()
+            }
+            .navigationDestination(isPresented: $navigateToContentView) {
+                ContentView()
+            }
         }
     }
-    
+
+    // Fetch medication interactions
     func fetchInteractions() {
-        // Retrieve user identifier from Keychain
         guard let userId = KeychainHelper.getUserIdentifier() else {
-            self.errorMessage = "User not found"
-            self.isLoading = false
+            DispatchQueue.main.async {
+                self.errorMessage = "User not found"
+                self.isLoading = false
+            }
             return
         }
-        
+
         guard let encodedMedication = medication.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
-              let url = URL(string: "\(ContentView.Key.backend_path)interactions?user_id=\(userId)&medication=\(encodedMedication)")
-        else {
-            self.errorMessage = "Invalid URL"
-            self.isLoading = false
+              let url = URL(string: "\(ContentView.Key.backend_path)interactions?user_id=\(userId)&medication=\(encodedMedication)") else {
+            DispatchQueue.main.async {
+                self.errorMessage = "Invalid URL"
+                self.isLoading = false
+            }
             return
         }
-        
+
         URLSession.shared.dataTask(with: url) { data, response, error in
             if let error = error {
                 DispatchQueue.main.async {
@@ -94,13 +105,22 @@ struct InteractionsView: View {
             }
         }.resume()
     }
+
+    // Process API response
     func processGeneratedText(_ text: String) -> [String] {
         return text.components(separatedBy: "\n")
-                    .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-                    .filter { !$0.isEmpty }
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
     }
+
+    // Add medication and navigate to ContentView
+    func addMedicationAndProceed() {
+        addMedication()
+        proceedToContentView()
+    }
+
+    // Add medication to user's list
     func addMedication() {
-        // Build the URL for the PATCH request to update medications.
         guard let userId = KeychainHelper.getUserIdentifier() else {
             print("User ID not found in Keychain")
             return
@@ -109,12 +129,12 @@ struct InteractionsView: View {
             print("Invalid URL for updating medications")
             return
         }
-        
+
         let body: [String: Any] = [
             "medicationsToAdd": [medication],
             "medicationsToRemove": []
         ]
-        
+
         var request = URLRequest(url: url)
         request.httpMethod = "PATCH"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -124,7 +144,7 @@ struct InteractionsView: View {
             print("Error serializing JSON: \(error)")
             return
         }
-        
+
         URLSession.shared.dataTask(with: request) { data, response, error in
             if let error = error {
                 print("Error updating medication: \(error.localizedDescription)")
@@ -143,11 +163,16 @@ struct InteractionsView: View {
             }
         }.resume()
     }
+
+    // Navigate to ContentView
+    func proceedToContentView() {
+        navigateToContentView = true
+    }
 }
 
 struct InteractionsView_Previews: PreviewProvider {
     static var previews: some View {
-        NavigationView {
+        NavigationStack {
             InteractionsView(medication: "TYLENOL")
         }
     }

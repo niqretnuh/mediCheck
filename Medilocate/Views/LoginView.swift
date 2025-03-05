@@ -62,6 +62,9 @@ struct LoginView: View {
                     isAuthenticated = true
                 }
             }
+            else{
+                isAuthenticated = false
+            }
         }
     }
 }

@@ -49,7 +49,7 @@ def translate_text(text: str, max_new_tokens: int = 550, top_p: float = 0.9, tem
         "If the user is elderly, use simpler vocabulary and a considerate tone. "
         "If the user is pregnant, include specific pregnancy-related warnings regarding adverse reactions; otherwise, omit them.\n\n"
         "Each bullet point should summarize one key fact in a single, clear, and concise sentence without any medical jargon. "
-        "Return only the bullet points separated by new lines, with no additional text."
+        "Return ONLY bullet points separated by new lines, with no additional text. No frontal text like 'here are the details'"
     )
 
     prompt = (
@@ -192,7 +192,7 @@ async def get_interactions(
         "User is seeking to start taking a new medication, but want to make sure there are no adverse interactions with the current medications. I will provide you a list of medications a user is currently taking. "
         "Based on this list of current medication and the FDA's data on the substances that interact with the new medication, please make inferences of whether every medication on the list interacts with the new medication"
         "If any of the current medication is known to have adverse interaction with the new medication, please generate a bullet point consisted of what that current medication is, and a concise explanation of why it is (paraphrase the FDA text)"
-        "If no significant interactions found or the using is not taking any medications, say no interaction detected, consult with medical professional for help"
+        "If no significant interactions found or the using is not taking any medications, do not say anything."
         "Return only the bullet points separated by new lines, with no additional text."
     )
     text = (
