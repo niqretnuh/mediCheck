@@ -49,7 +49,7 @@ def translate_text(text: str, max_new_tokens: int = 550, top_p: float = 0.9, tem
         "If the user is elderly, use simpler vocabulary and a considerate tone. "
         "If the user is pregnant, include specific pregnancy-related warnings regarding adverse reactions; otherwise, omit them.\n\n"
         "Each bullet point should summarize one key fact in a single, clear, and concise sentence without any medical jargon. "
-        "Return ONLY bullet points separated by new lines, with no additional text. No frontal text like 'here are the details'"
+        "Return ONLY bullet points separated by new lines"
     )
 
     prompt = (
