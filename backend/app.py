@@ -166,7 +166,7 @@ async def get_interactions(
     current_medications = user.get("medications", [])
     
     fda_url = f"https://api.fda.gov/drug/label.json?search=drug_interactions:{medication}&limit=1"
-    found_reponse = True
+    found_response = True
     try:
         fda_response = requests.get(fda_url)
         fda_response.raise_for_status()
