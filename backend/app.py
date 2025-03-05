@@ -58,7 +58,7 @@ def translate_text(text: str, max_new_tokens: int = 550, top_p: float = 0.9, tem
         f"{text}\n"
         "<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n"
     )
-    
+    print(age, gender, ispregnant)
     return generate_response(prompt, max_new_tokens, top_p, temperature)
 
 class CombinedMedicationResponse(BaseModel):
